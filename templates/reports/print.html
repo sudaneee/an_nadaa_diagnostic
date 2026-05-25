@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ report.report_number }} — {{ report.service.name }}</title>
+    <style>
+        /* ── Page setup ─────────────────────────────────────────────────── */
+        @page { size: A4; margin: 1.2cm 1.5cm; }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            line-height: 1.45;
+            color: #111;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page { max-width: 210mm; margin: 0 auto; padding: 16px; background:#fff; }
+
+        /* ── Print-only helpers ─────────────────────────────────────────── */
+        @media print { .no-print { display: none !important; } }
+
+        /* ── Header ─────────────────────────────────────────────────────── */
+        .report-header {
+            display: flex;
+            align-items: center;
+            border-bottom: 3px solid #1e3c72;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+            gap: 16px;
+        }
+        .header-logo { flex-shrink:0; }
+        .header-logo img { max-height: 80px; max-width: 100px; object-fit: contain; }
+        .header-logo .logo-placeholder {
+            width:80px; height:80px; border:2px dashed #aaa;
+            display:flex; align-items:center; justify-content:center;
+            color:#aaa; font-size:9pt; text-align:center; border-radius:6px;
+        }
+        .header-text { flex:1; text-align: center; }
+        .header-text .centre-name {
+            font-size: 18pt; font-weight: 700; color: #1e3c72;
+            text-transform: uppercase; letter-spacing: 1px; margin:0;
+        }
+        .header-text .centre-tagline {
+            font-size: 10pt; color: #555; margin: 2px 0;
+        }
+        .header-text .centre-contact {
+            font-size: 9.5pt; color: #333; margin-top: 4px;
+        }
+        .header-spacer { width:96px; flex-shrink:0; } /* balances the logo on left */
+
+        /* ── Report title band ──────────────────────────────────────────── */
+        .report-title {
+            background: #1e3c72; color: #fff;
+            text-align: center; padding: 5px 0;
+            font-size: 12pt; font-weight: 700;
+            letter-spacing: 1px; text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        /* ── Biodata table (horizontal) ─────────────────────────────────── */
+        .biodata-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 10.5pt;
+        }
+        .biodata-table th {
+            background: #e8eef8;
+            color: #1e3c72;
+            font-weight: 700;
+            padding: 5px 8px;
+            border: 1px solid #b0c0dd;
+            font-size: 9.5pt;
+            white-space: nowrap;
+        }
+        .biodata-table td {
+            padding: 6px 8px;
+            border: 1px solid #b0c0dd;
+            background: #fff;
+        }
+
+        /* ── Results table ──────────────────────────────────────────────── */
+        .section-title {
+            font-size: 11pt; font-weight: 700; color: #1e3c72;
+            border-bottom: 2px solid #1e3c72; padding-bottom: 3px;
+            margin: 16px 0 8px 0; text-transform: uppercase;
+        }
+        .results-table {
+            width: 100%; border-collapse: collapse; font-size: 10.5pt;
+            margin-bottom: 14px;
+        }
+        .results-table th {
+            background: #1e3c72; color: #fff;
+            padding: 6px 10px; text-align: left;
+            font-weight: 700;
+        }
+        .results-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .results-table tr:nth-child(even) td { background: #f7f9fd; }
+        .result-value { font-weight: 700; }
+
+        /* ── Notes ──────────────────────────────────────────────────────── */
+        .notes-box {
+            border-left: 4px solid #1e3c72;
+            background: #f7f9fd;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            font-size: 10.5pt;
+        }
+        .notes-box strong { color: #1e3c72; }
+
+        /* ── Signature section ───────────────────────────────────────────── */
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            gap: 20px;
+        }
+        .sig-block {
+            flex: 1;
+            text-align: center;
+            border-top: 1.5px solid #333;
+            padding-top: 6px;
+            font-size: 10pt;
+        }
+        .sig-name { font-weight: 700; margin-top: 4px; }
+        .sig-role { color: #555; font-size: 9pt; }
+
+        /* ── Footer ─────────────────────────────────────────────────────── */
+        .report-footer {
+            margin-top: 28px;
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
+            font-size: 8.5pt;
+            color: #666;
+            text-align: center;
+        }
+        .disclaimer {
+            font-size: 8pt; color: #888;
+            margin-top: 8px; font-style: italic;
+        }
+
+        /* ── Screen-only buttons ─────────────────────────────────────────── */
+        .action-bar {
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+            display: flex; gap: 10px; align-items: center;
+            margin-bottom: 20px;
+        }
+        .btn-print {
+            background: #1e3c72; color: #fff; border: none;
+            padding: 8px 22px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; font-weight: 600;
+        }
+        .btn-print:hover { background: #2a5298; }
+        .btn-back {
+            background: #fff; color: #444; border: 1px solid #ccc;
+            padding: 8px 18px; border-radius: 4px; cursor: pointer;
+            font-size: 13px; text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Screen action bar ──────────────────────────────────────────────── -->
+<div class="action-bar no-print">
+    <button class="btn-print" onclick="window.print()">&#128438; Print Report</button>
+    <a class="btn-back" href="{% url 'reports:detail' report.id %}">&#8592; Back to Detail</a>
+    <span style="margin-left:auto;color:#888;font-size:12px;">{{ report.report_number }}</span>
+</div>
+
+<div class="page">
+
+    <!-- ══════════════════ HEADER ══════════════════ -->
+    <div class="report-header">
+        <div class="header-logo">
+            {% if centre.logo %}
+            <img src="{{ centre.logo.url }}" alt="{{ centre.name }} logo">
+            {% else %}
+            <div class="logo-placeholder">LOGO</div>
+            {% endif %}
+        </div>
+
+        <div class="header-text">
+            <p class="centre-name">{{ centre.name }}</p>
+            {% if centre.tagline %}
+            <p class="centre-tagline">{{ centre.tagline }}</p>
+            {% endif %}
+            <p class="centre-contact">
+                {{ centre.address }}<br>
+                <strong>Tel:</strong> {{ centre.phone }}
+                {% if centre.email %} &nbsp;|&nbsp; <strong>Email:</strong> {{ centre.email }}{% endif %}
+            </p>
+        </div>
+
+        <div class="header-spacer"></div>
+    </div>
+
+    <!-- ══════════════════ TITLE BAND ══════════════════ -->
+    <div class="report-title">Medical Investigation Report</div>
+
+    <!-- ══════════════════ PATIENT BIODATA (horizontal) ══════════════════ -->
+    <table class="biodata-table">
+        <thead>
+            <tr>
+                <th>Patient Name</th>
+                <th>Age</th>
+                <th>Sex</th>
+                <th>Phone</th>
+                <th>Investigation</th>
+                <th>Report Date</th>
+                <th>Report #</th>
+                {% if report.invoice %}<th>Invoice #</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>{{ report.client_name }}</strong></td>
+                <td>{{ report.client_age|default:"—" }}</td>
+                <td>{{ report.client_sex|default:"—" }}</td>
+                <td>{{ report.client_phone|default:"—" }}</td>
+                <td><strong>{{ report.service.name }}</strong></td>
+                <td>{{ report.created_at|date:"d/m/Y" }}</td>
+                <td><strong>{{ report.report_number }}</strong></td>
+                {% if report.invoice %}<td>{{ report.invoice.invoice_number }}</td>{% endif %}
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- ══════════════════ RESULTS ══════════════════ -->
+    <div class="section-title">Results</div>
+    <table class="results-table">
+        <thead>
+            <tr>
+                <th style="width:35%">Parameter</th>
+                <th style="width:25%">Result</th>
+                <th style="width:25%">Reference Range</th>
+                <th style="width:15%">Unit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in parameters %}
+            <tr>
+                <td><strong>{{ p.name }}</strong></td>
+                <td class="result-value">{{ p.value|default:"—" }}</td>
+                <td>{{ p.normal_range|default:"—" }}</td>
+                <td>{{ p.unit|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;color:#888;padding:12px">No results recorded.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ══════════════════ NOTES ══════════════════ -->
+    {% if report.clinical_notes %}
+    <div class="notes-box">
+        <strong>Clinical Notes:</strong><br>
+        {{ report.clinical_notes|linebreaksbr }}
+    </div>
+    {% endif %}
+
+    {% if report.lab_notes %}
+    <div class="notes-box">
+        <strong>Laboratory / Technical Notes:</strong><br>
+        {{ report.lab_notes|linebreaksbr }}
+    </div>
+    {% endif %}
+
+    <!-- ══════════════════ SIGNATURE ══════════════════ -->
+    <div class="signature-section">
+        <div class="sig-block">
+            <div class="sig-name">{{ report.created_by.get_full_name|default:report.created_by.username }}</div>
+            <div class="sig-role">Performing Technician</div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-name">{{ report.signatory|default:"______________________" }}</div>
+            <div class="sig-role">Result Signatory</div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ FOOTER ══════════════════ -->
+    <div class="report-footer">
+        <p>{{ centre.name }} &mdash; {{ centre.address }} &mdash; Tel: {{ centre.phone }}</p>
+        <p class="disclaimer">
+            This report is generated electronically. Results are based on the sample submitted.
+            Interpretation should be carried out by a qualified medical professional.
+            This document is confidential and intended solely for the named patient.
+        </p>
+    </div>
+
+</div><!-- /page -->
+</body>
+</html>

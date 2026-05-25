@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}Receipt — {{ invoice.invoice_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        body { background: #fff !important; }
+        .app-container { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
+        .receipt-card { border: none !important; }
+    }
+
+    .receipt-card {
+        max-width: 420px;
+        margin: 0 auto;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: .88rem;
+    }
+    .receipt-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #fff;
+        text-align: center;
+        padding: 20px 16px 14px;
+    }
+    .receipt-header h5 { font-size: 1.1rem; font-weight: 800; margin-bottom: 2px; }
+    .receipt-header small { opacity: .85; font-size: .78rem; }
+    .receipt-body { padding: 16px; }
+    .receipt-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px dotted #eee;
+    }
+    .receipt-row:last-child { border-bottom: none; }
+    .receipt-divider { border-top: 2px dashed #ccc; margin: 10px 0; }
+    .receipt-total {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #1e3c72;
+    }
+    .receipt-footer {
+        background: #f8f9fa;
+        text-align: center;
+        padding: 10px;
+        font-size: .78rem;
+        color: #888;
+        border-top: 1px solid #eee;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="no-print d-flex justify-content-center gap-2 mb-3">
+    <button onclick="window.print()" class="btn btn-primary">
+        <i class="fas fa-print"></i> Print Receipt
+    </button>
+    <a href="{% url 'invoices:detail' invoice.id %}" class="btn btn-outline-secondary">
+        <i class="fas fa-eye"></i> View Invoice
+    </a>
+    <a href="{% url 'invoices:create' %}" class="btn btn-success">
+        <i class="fas fa-plus"></i> New Invoice
+    </a>
+</div>
+
+<div class="receipt-card">
+
+    <div class="receipt-header">
+        <h5><i class="fas fa-hospital-alt"></i> {{ centre_name }}</h5>
+        <small>{{ centre_address }}</small><br>
+        <small>Tel: {{ centre_phone }}</small>
+        <div class="mt-2 fw-bold" style="font-size:1rem; letter-spacing:1px;">PAYMENT RECEIPT</div>
+    </div>
+
+    <div class="receipt-body">
+
+        <div class="receipt-row">
+            <span class="text-muted">Invoice #</span>
+            <strong>{{ invoice.invoice_number }}</strong>
+        </div>
+        <div class="receipt-row">
+            <span class="text-muted">Date</span>
+            <span>{{ invoice.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="receipt-row">
+            <span class="text-muted">Cashier</span>
+            <span>{{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</span>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-row">
+            <span class="text-muted">Patient</span>
+            <strong>{{ invoice.full_name }}</strong>
+        </div>
+        <div class="receipt-row">
+            <span class="text-muted">Age / Sex</span>
+            <span>{{ invoice.age }} / {{ invoice.get_sex_display }}</span>
+        </div>
+        <div class="receipt-row">
+            <span class="text-muted">Phone</span>
+            <span>{{ invoice.phone_number }}</span>
+        </div>
+        {% if invoice.referral %}
+        <div class="receipt-row">
+            <span class="text-muted">Referred By</span>
+            <span>{{ invoice.referral.name }}</span>
+        </div>
+        {% endif %}
+
+        <div class="receipt-divider"></div>
+
+        {% for item in invoice.items.all %}
+        <div class="receipt-row">
+            <span>{{ item.service.name }}{% if item.quantity > 1 %} &times; {{ item.quantity }}{% endif %}</span>
+            <span>&#8358;{{ item.total_price|floatformat:0 }}</span>
+        </div>
+        {% endfor %}
+
+        {% if invoice.discount > 0 %}
+        <div class="receipt-row" style="color:#dc3545;">
+            <span>Discount</span>
+            <span>&minus; &#8358;{{ invoice.discount|floatformat:0 }}</span>
+        </div>
+        {% endif %}
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-row receipt-total">
+            <span>TOTAL PAID</span>
+            <span>&#8358;{{ invoice.total_amount|floatformat:0 }}</span>
+        </div>
+        <div class="receipt-row">
+            <span class="text-muted">Payment Method</span>
+            <span class="fw-semibold">{{ invoice.get_payment_method_display }}</span>
+        </div>
+        {% if invoice.reference_number %}
+        <div class="receipt-row">
+            <span class="text-muted">Reference #</span>
+            <span>{{ invoice.reference_number }}</span>
+        </div>
+        {% endif %}
+
+        {% if invoice.qr_code %}
+        <div class="text-center mt-3">
+            <img src="{{ invoice.qr_code.url }}" alt="QR" style="width:90px; height:90px;">
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="receipt-footer">
+        Thank you for choosing {{ centre_name }}.<br>
+        Results are confidential. Keep this receipt for your records.
+    </div>
+
+</div>
+{% endblock %}

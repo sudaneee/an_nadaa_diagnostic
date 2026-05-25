@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% block title %}Create Report{% endblock %}
+
+{% block extra_css %}
+<style>
+    .biodata-pill { background:#f0f4ff; border:1px solid #d0dcff; border-radius:8px; padding:10px 16px; }
+    .param-row { border-left:3px solid #1e3c72; padding-left:12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fas fa-plus-circle text-primary me-2"></i>Create Medical Report</h4>
+    <a href="{% url 'reports:list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i> Back to Reports
+    </a>
+</div>
+
+<div class="row g-3">
+
+    <!-- LEFT: form -->
+    <div class="col-lg-8">
+        <form method="post" id="reportForm">
+            {% csrf_token %}
+            <input type="hidden" name="invoice"      id="invoiceId">
+            <input type="hidden" name="invoice_item" id="invoiceItemId">
+            <input type="hidden" name="service"      id="serviceId">
+
+            <!-- Step 1: Select Invoice -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-file-invoice me-2"></i>Step 1 — Select Invoice</strong>
+                </div>
+                <div class="card-body">
+                    <select id="invoiceSelect" class="form-select" required>
+                        <option value="">— Search by invoice # or patient name —</option>
+                        {% for inv in invoices %}
+                        <option value="{{ inv.id }}"
+                                data-number="{{ inv.invoice_number }}"
+                                data-name="{{ inv.full_name }}"
+                                data-age="{{ inv.age }}"
+                                data-sex="{{ inv.get_sex_display }}"
+                                data-phone="{{ inv.phone_number }}"
+                                data-date="{{ inv.created_at|date:'d/m/Y' }}">
+                            {{ inv.invoice_number }} — {{ inv.full_name }} ({{ inv.created_at|date:"d/m/Y" }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Patient biodata (shown after invoice selected) -->
+            <div id="biodataPanel" class="card mb-3" style="display:none">
+                <div class="card-body py-2">
+                    <div class="biodata-pill d-flex flex-wrap gap-4 small">
+                        <div><span class="text-muted">Patient:</span> <strong id="bdName"></strong></div>
+                        <div><span class="text-muted">Age:</span> <strong id="bdAge"></strong></div>
+                        <div><span class="text-muted">Sex:</span> <strong id="bdSex"></strong></div>
+                        <div><span class="text-muted">Phone:</span> <strong id="bdPhone"></strong></div>
+                        <div><span class="text-muted">Date:</span> <strong id="bdDate"></strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Select Service (from invoice items) -->
+            <div id="servicePanel" class="card mb-3" style="display:none">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-flask me-2"></i>Step 2 — Select Service / Investigation</strong>
+                </div>
+                <div class="card-body">
+                    <select id="serviceSelect" class="form-select" required>
+                        <option value="">— Select service —</option>
+                    </select>
+                    <small class="text-muted mt-1 d-block">Only services that require a report are shown.</small>
+                </div>
+            </div>
+
+            <!-- Step 3: Parameters -->
+            <div id="paramsPanel" class="card mb-3" style="display:none">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-table me-2"></i>Step 3 — Enter Results</strong>
+                </div>
+                <div class="card-body" id="paramsBody">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Step 4: Notes + Signatory -->
+            <div id="notesPanel" class="card mb-3" style="display:none">
+                <div class="card-header bg-primary text-white">
+                    <strong><i class="fas fa-pen me-2"></i>Step 4 — Notes &amp; Signatory</strong>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Result Signatory</label>
+                        <input type="text" name="signatory" class="form-control"
+                               placeholder="e.g. Dr. Aminu Musa, MBBS, FWACP">
+                        <div class="form-text">Name and qualifications of the person signing this report.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Lab / Technical Notes</label>
+                        <textarea name="lab_notes" class="form-control" rows="3"
+                                  placeholder="Methodology, observations, technical details…"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Clinical Notes</label>
+                        <textarea name="clinical_notes" class="form-control" rows="3"
+                                  placeholder="Clinical history, symptoms…"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div id="submitBar" style="display:none">
+                <button type="submit" class="btn btn-success btn-lg px-5">
+                    <i class="fas fa-save me-1"></i> Save Report
+                </button>
+                <a href="{% url 'reports:list' %}" class="btn btn-outline-secondary ms-2">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- RIGHT: pending items quick-pick -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <strong><i class="fas fa-clock me-2"></i>Pending Report Items</strong>
+                <small class="text-muted d-block mt-1">Invoice items needing a report</small>
+            </div>
+            <div class="card-body p-0">
+                <div style="max-height:420px;overflow-y:auto">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light position-sticky top-0">
+                            <tr><th>Invoice</th><th>Patient</th><th>Service</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            {% for item in pending_items %}
+                            <tr>
+                                <td class="small fw-semibold">{{ item.invoice.invoice_number }}</td>
+                                <td class="small">{{ item.invoice.full_name }}</td>
+                                <td class="small">{{ item.service.name }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-xs btn-sm btn-outline-primary"
+                                            onclick="quickFill({{ item.invoice.id }}, {{ item.id }}, {{ item.service.id }}, '{{ item.service.name|escapejs }}')">
+                                        Pick
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-3">All caught up!</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Select2 for invoice search ────────────────────────────────────────────────
+$(function(){
+    if (typeof $.fn.select2 !== 'undefined') {
+        $('#invoiceSelect').select2({ theme:'bootstrap-5', width:'100%', placeholder:'Search invoice…' });
+    }
+    $('#invoiceSelect').on('change', function(){
+        const id = $(this).val();
+        if (!id) return;
+        loadInvoice(id);
+    });
+});
+
+function loadInvoice(invoiceId) {
+    fetch(`/reports/api/invoice-info/${invoiceId}/`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('invoiceId').value = invoiceId;
+            // Biodata
+            document.getElementById('bdName').textContent  = data.client_name;
+            document.getElementById('bdAge').textContent   = data.age;
+            document.getElementById('bdSex').textContent   = data.sex;
+            document.getElementById('bdPhone').textContent = data.phone;
+            document.getElementById('bdDate').textContent  = data.invoice_date;
+            document.getElementById('biodataPanel').style.display = 'block';
+
+            // Populate service dropdown
+            const sel = document.getElementById('serviceSelect');
+            sel.innerHTML = '<option value="">— Select service —</option>';
+            data.items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.service_id;
+                opt.dataset.itemId = item.id;
+                opt.textContent = item.service_name + (item.has_report ? ' (report exists)' : '');
+                sel.appendChild(opt);
+            });
+
+            if (data.items.length === 0) {
+                sel.innerHTML = '<option value="">No report-eligible services on this invoice</option>';
+            }
+            document.getElementById('servicePanel').style.display = 'block';
+            sel.addEventListener('change', onServiceChange);
+        })
+        .catch(() => alert('Could not load invoice info. Please try again.'));
+}
+
+function onServiceChange() {
+    const sel     = document.getElementById('serviceSelect');
+    const option  = sel.options[sel.selectedIndex];
+    const svcId   = sel.value;
+    const itemId  = option ? option.dataset.itemId : '';
+
+    document.getElementById('serviceId').value      = svcId;
+    document.getElementById('invoiceItemId').value  = itemId || '';
+
+    if (!svcId) {
+        document.getElementById('paramsPanel').style.display = 'none';
+        document.getElementById('notesPanel').style.display  = 'none';
+        document.getElementById('submitBar').style.display    = 'none';
+        return;
+    }
+    loadParameters(svcId);
+}
+
+function loadParameters(serviceId) {
+    fetch(`/reports/api/service-parameters/${serviceId}/`)
+        .then(r => r.json())
+        .then(data => {
+            const body = document.getElementById('paramsBody');
+            if (!data.parameters || data.parameters.length === 0) {
+                body.innerHTML = '<p class="text-muted">No predefined parameters for this service.</p>';
+            } else {
+                body.innerHTML = data.parameters.map(p => buildParamField(p)).join('');
+            }
+            document.getElementById('paramsPanel').style.display = 'block';
+            document.getElementById('notesPanel').style.display  = 'block';
+            document.getElementById('submitBar').style.display   = 'block';
+        });
+}
+
+function buildParamField(p) {
+    const req = p.required ? 'required' : '';
+    const hint = [p.unit ? `Unit: ${p.unit}` : '', p.normal_range ? `Normal: ${p.normal_range}` : '']
+                    .filter(Boolean).join(' | ');
+
+    let input = '';
+    if (p.type === 'textarea') {
+        input = `<textarea name="param_${p.id}" class="form-control" rows="2" ${req}></textarea>`;
+    } else if (p.type === 'select') {
+        const opts = p.options.map(o => `<option>${o}</option>`).join('');
+        input = `<select name="param_${p.id}" class="form-select" ${req}><option value="">— Select —</option>${opts}</select>`;
+    } else if (p.type === 'checkbox') {
+        input = `<div class="form-check mt-2">
+            <input type="checkbox" name="param_${p.id}" class="form-check-input" value="Yes" id="pc${p.id}">
+            <label class="form-check-label" for="pc${p.id}">Positive / Yes</label>
+        </div>`;
+    } else if (p.type === 'number') {
+        input = `<input type="number" name="param_${p.id}" class="form-control" step="0.01" ${req}>`;
+    } else {
+        input = `<input type="text" name="param_${p.id}" class="form-control" ${req}>`;
+    }
+
+    return `<div class="mb-3 param-row">
+        <label class="form-label fw-semibold">
+            ${p.name}${p.required ? ' <span class="text-danger">*</span>' : ''}
+            ${hint ? `<small class="text-muted fw-normal ms-1">(${hint})</small>` : ''}
+        </label>
+        ${input}
+    </div>`;
+}
+
+// Quick-fill from pending items panel
+function quickFill(invoiceId, itemId, serviceId, serviceName) {
+    document.getElementById('invoiceItemId').value = itemId;
+    document.getElementById('serviceId').value     = serviceId;
+
+    // Select the invoice in the dropdown
+    const invSel = document.getElementById('invoiceSelect');
+    if (invSel.querySelector(`option[value="${invoiceId}"]`)) {
+        $(invSel).val(invoiceId).trigger('change');
+    } else {
+        document.getElementById('invoiceId').value = invoiceId;
+        loadInvoice(invoiceId);
+    }
+}
+</script>
+{% endblock %}

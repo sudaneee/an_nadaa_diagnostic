@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% block title %}Report {{ report.report_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .biodata-table th { background:#f0f4ff; font-size:.8rem; color:#555; font-weight:600; white-space:nowrap; }
+    .biodata-table td { font-size:.9rem; white-space:nowrap; }
+    .result-value { font-weight:600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+        <i class="fas fa-file-medical text-primary me-2"></i>
+        Report <span class="text-primary">{{ report.report_number }}</span>
+    </h4>
+    <div class="d-flex gap-2">
+        {% if can_edit %}
+        <a href="{% url 'reports:edit' report.id %}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+        {% endif %}
+        <a href="{% url 'reports:print' report.id %}" class="btn btn-success" target="_blank">
+            <i class="fas fa-print"></i> Print
+        </a>
+        <a href="{% url 'reports:list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<!-- Patient biodata — horizontal table -->
+<div class="card mb-3">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered biodata-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Age</th>
+                        <th>Sex</th>
+                        <th>Phone</th>
+                        <th>Service / Investigation</th>
+                        <th>Report Date</th>
+                        {% if report.invoice %}<th>Invoice #</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>{{ report.client_name }}</strong></td>
+                        <td>{{ report.client_age|default:"—" }}</td>
+                        <td>{{ report.client_sex|default:"—" }}</td>
+                        <td>{{ report.client_phone|default:"—" }}</td>
+                        <td>{{ report.service.name }}</td>
+                        <td>{{ report.created_at|date:"d/m/Y H:i" }}</td>
+                        {% if report.invoice %}
+                        <td>
+                            <a href="{% url 'invoices:detail' report.invoice.id %}">
+                                {{ report.invoice.invoice_number }}
+                            </a>
+                        </td>
+                        {% endif %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Results -->
+{% if parameters %}
+<div class="card mb-3">
+    <div class="card-header"><strong><i class="fas fa-table me-2"></i>Results</strong></div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Result</th>
+                        <th>Reference Range</th>
+                        <th>Unit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in parameters %}
+                    <tr>
+                        <td><strong>{{ p.name }}</strong></td>
+                        <td class="result-value">{{ p.value|default:"—" }}</td>
+                        <td class="text-muted small">{{ p.normal_range|default:"—" }}</td>
+                        <td class="text-muted small">{{ p.unit|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notes -->
+{% if report.lab_notes or report.clinical_notes %}
+<div class="card mb-3">
+    <div class="card-header"><strong><i class="fas fa-sticky-note me-2"></i>Notes</strong></div>
+    <div class="card-body">
+        {% if report.lab_notes %}
+        <p class="fw-semibold mb-1">Lab / Technical Notes</p>
+        <div class="alert alert-light mb-3">{{ report.lab_notes|linebreaks }}</div>
+        {% endif %}
+        {% if report.clinical_notes %}
+        <p class="fw-semibold mb-1">Clinical Notes</p>
+        <div class="alert alert-light mb-0">{{ report.clinical_notes|linebreaks }}</div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Signatory + Performed by -->
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1 text-muted small">PERFORMED BY</p>
+                <strong>{{ report.created_by.get_full_name|default:report.created_by.username }}</strong>
+                <p class="text-muted small mt-1">{{ report.created_at|date:"d/m/Y H:i" }}</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1 text-muted small">RESULT SIGNATORY</p>
+                <strong>{{ report.signatory|default:"—" }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

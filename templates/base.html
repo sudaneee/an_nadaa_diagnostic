@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>An-Nadaa Diagnostic Centre — {% block title %}System{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+
+        .app-container {
+            max-width: 1440px;
+            margin: 16px auto;
+            background: #f8f9fb;
+            border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.3);
+            overflow: hidden;
+        }
+
+        /* ── Navbar ───────────────────────────────────────────────────────── */
+        .navbar-custom {
+            background: #fff;
+            padding: 12px 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .nav-brand i { font-size: 22px; color: #1e3c72; }
+        .nav-brand span { font-size: 17px; font-weight: 700; color: #1e3c72; }
+
+        .nav-menu {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #555;
+            cursor: pointer;
+            padding: 7px 14px;
+            border-radius: 8px;
+            transition: all .2s;
+            text-decoration: none;
+            font-size: .88rem;
+            font-weight: 500;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .user-info { text-align: right; }
+        .user-name { font-weight: 600; font-size: .9rem; color: #333; }
+        .user-role { font-size: .75rem; color: #888; }
+
+        .user-avatar {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        /* ── Main content ─────────────────────────────────────────────────── */
+        .main-content { padding: 24px 28px; }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e8ecf0;
+            box-shadow: 0 2px 12px rgba(0,0,0,.04);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8ecf0;
+            background: #fff;
+            border-radius: 12px 12px 0 0;
+        }
+        .card-body { padding: 20px; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            border: none;
+        }
+        .btn-primary:hover { transform: translateY(-1px); opacity: .92; }
+
+        /* Stat card */
+        .stat-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e8ecf0;
+            box-shadow: 0 2px 10px rgba(0,0,0,.04);
+            text-align: center;
+            height: 100%;
+        }
+        .stat-card .stat-icon { font-size: 2rem; margin-bottom: 8px; }
+        .stat-card .stat-value { font-size: 1.6rem; font-weight: 700; color: #1e3c72; }
+        .stat-card .stat-label { font-size: .8rem; color: #888; margin-top: 4px; }
+
+        @media (max-width: 768px) {
+            .nav-menu { display: none; }
+            .main-content { padding: 16px; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="app-container">
+
+    {% if user.is_authenticated %}
+    <nav class="navbar-custom">
+        <a class="nav-brand" href="{% url 'dashboard:home' %}">
+            <i class="fas fa-hospital-alt"></i>
+            <span>An-Nadaa Diagnostic</span>
+        </a>
+
+        <div class="nav-menu">
+            <a href="{% url 'dashboard:home' %}" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+
+            {% if user.is_admin %}
+                <a href="{% url 'invoices:list' %}" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> Invoices
+                </a>
+                <a href="{% url 'invoices:create' %}" class="nav-item">
+                    <i class="fas fa-plus-circle"></i> New Invoice
+                </a>
+                <a href="{% url 'services:list' %}" class="nav-item">
+                    <i class="fas fa-flask"></i> Services
+                </a>
+                <a href="{% url 'reports:list' %}" class="nav-item">
+                    <i class="fas fa-file-medical"></i> Reports
+                </a>
+                <a href="{% url 'accounts:user_list' %}" class="nav-item">
+                    <i class="fas fa-users-cog"></i> Users
+                </a>
+
+            {% elif user.is_cashier %}
+                <a href="{% url 'invoices:create' %}" class="nav-item">
+                    <i class="fas fa-plus-circle"></i> New Invoice
+                </a>
+                <a href="{% url 'invoices:list' %}" class="nav-item">
+                    <i class="fas fa-file-invoice-dollar"></i> My Invoices
+                </a>
+
+            {% elif user.is_doctor %}
+                <a href="{% url 'reports:list' %}" class="nav-item">
+                    <i class="fas fa-file-medical"></i> Pending Reviews
+                </a>
+                <a href="{% url 'reports:list' %}?status=FINAL" class="nav-item">
+                    <i class="fas fa-check-circle"></i> Completed
+                </a>
+
+            {% elif user.is_lab_tech %}
+                <a href="{% url 'reports:create' %}" class="nav-item">
+                    <i class="fas fa-plus-circle"></i> New Report
+                </a>
+                <a href="{% url 'reports:list' %}" class="nav-item">
+                    <i class="fas fa-file-medical"></i> My Reports
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="user-profile">
+            <div class="user-info">
+                <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                <div class="user-role">{{ user.get_role_display }}</div>
+            </div>
+            <div class="user-avatar">
+                {{ user.get_full_name|first|default:user.username|first|upper }}
+            </div>
+            <a href="{% url 'accounts:logout' %}" class="btn btn-sm btn-outline-danger ms-1"
+               onclick="return confirm('Log out?')" style="border-radius:8px; font-size:.8rem;">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="main-content">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

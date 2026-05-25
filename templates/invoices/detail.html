@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block title %}Invoice {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+        <i class="fas fa-file-invoice-dollar text-primary"></i>
+        Invoice <span class="text-primary">{{ invoice.invoice_number }}</span>
+    </h4>
+    <div class="d-flex gap-2">
+        <a href="{% url 'invoices:receipt' invoice.id %}" class="btn btn-success btn-sm" target="_blank">
+            <i class="fas fa-print"></i> Print Receipt
+        </a>
+        <a href="{% url 'invoices:list' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Left: Patient + Services -->
+    <div class="col-md-8">
+
+        <!-- Patient info -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong><i class="fas fa-user me-2"></i>Patient Information</strong>
+                <span class="badge {% if invoice.status == 'PAID' %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+                    {{ invoice.get_status_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6 col-md-4">
+                        <small class="text-muted d-block">Full Name</small>
+                        <strong>{{ invoice.full_name }}</strong>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <small class="text-muted d-block">Age</small>
+                        <strong>{{ invoice.age }}</strong>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <small class="text-muted d-block">Sex</small>
+                        <strong>{{ invoice.get_sex_display }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <small class="text-muted d-block">Phone</small>
+                        <strong>{{ invoice.phone_number }}</strong>
+                    </div>
+                    {% if invoice.referral %}
+                    <div class="col-12">
+                        <small class="text-muted d-block">Referred By</small>
+                        <strong>{{ invoice.referral }}</strong>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice meta -->
+        <div class="card">
+            <div class="card-header"><strong><i class="fas fa-info-circle me-2"></i>Invoice Details</strong></div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6 col-md-4">
+                        <small class="text-muted d-block">Invoice Number</small>
+                        <strong>{{ invoice.invoice_number }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <small class="text-muted d-block">Date &amp; Time</small>
+                        <strong>{{ invoice.created_at|date:"d/m/Y H:i" }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <small class="text-muted d-block">Cashier</small>
+                        <strong>{{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</strong>
+                    </div>
+                    <div class="col-6 col-md-4">
+                        <small class="text-muted d-block">Payment Method</small>
+                        <strong>{{ invoice.get_payment_method_display }}</strong>
+                    </div>
+                    {% if invoice.reference_number %}
+                    <div class="col-6 col-md-4">
+                        <small class="text-muted d-block">Reference #</small>
+                        <strong>{{ invoice.reference_number }}</strong>
+                    </div>
+                    {% endif %}
+                    {% if invoice.notes %}
+                    <div class="col-12">
+                        <small class="text-muted d-block">Notes</small>
+                        <span>{{ invoice.notes }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Services / Examinations -->
+        <div class="card">
+            <div class="card-header"><strong><i class="fas fa-flask me-2"></i>Examinations</strong></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Service</th>
+                                <th class="text-center">Qty</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in invoice.items.all %}
+                            <tr>
+                                <td>{{ item.service.name }}
+                                    {% if item.service.category %}
+                                    <small class="text-muted">({{ item.service.category.name }})</small>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ item.quantity }}</td>
+                                <td class="text-end">₦{{ item.unit_price|floatformat:2 }}</td>
+                                <td class="text-end fw-semibold">₦{{ item.total_price|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            {% if invoice.discount > 0 %}
+                            <tr>
+                                <th colspan="3" class="text-end">Subtotal:</th>
+                                <th class="text-end">₦{{ invoice.total_amount|add:invoice.discount|floatformat:2 }}</th>
+                            </tr>
+                            <tr>
+                                <th colspan="3" class="text-end text-danger">Discount:</th>
+                                <th class="text-end text-danger">− ₦{{ invoice.discount|floatformat:2 }}</th>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th colspan="3" class="text-end">TOTAL PAID:</th>
+                                <th class="text-end fs-5 text-success">₦{{ invoice.total_amount|floatformat:2 }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right: Payment summary + QR -->
+    <div class="col-md-4">
+
+        <div class="card">
+            <div class="card-header"><strong><i class="fas fa-money-bill-wave me-2"></i>Payment</strong></div>
+            <div class="card-body">
+                {% for payment in invoice.payments.all %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">{{ payment.payment_date|date:"d/m/Y H:i" }}</span>
+                    <strong class="text-success">₦{{ payment.amount|floatformat:2 }}</strong>
+                </div>
+                <div class="mb-2">
+                    <span class="badge
+                        {% if payment.payment_method == 'CASH' %}bg-success
+                        {% elif payment.payment_method == 'TRANSFER' %}bg-info
+                        {% else %}bg-warning text-dark{% endif %}">
+                        {{ payment.get_payment_method_display }}
+                    </span>
+                    {% if payment.reference_number %}
+                    <small class="text-muted ms-1">Ref: {{ payment.reference_number }}</small>
+                    {% endif %}
+                </div>
+                <div class="text-muted small">Received by: {{ payment.received_by.get_full_name|default:payment.received_by.username }}</div>
+                {% empty %}
+                <p class="text-muted">No payment recorded.</p>
+                {% endfor %}
+
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <strong>Amount Paid:</strong>
+                    <strong class="text-success fs-5">₦{{ invoice.amount_paid|floatformat:2 }}</strong>
+                </div>
+            </div>
+        </div>
+
+        {% if invoice.qr_code %}
+        <div class="card text-center">
+            <div class="card-header"><strong>QR Code</strong></div>
+            <div class="card-body">
+                <img src="{{ invoice.qr_code.url }}" alt="QR" style="max-width:160px;">
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Linked reports -->
+        {% if invoice.reports.exists %}
+        <div class="card">
+            <div class="card-header"><strong><i class="fas fa-file-medical me-2"></i>Medical Reports</strong></div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for report in invoice.reports.all %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="fw-semibold">{{ report.report_number }}</small><br>
+                            <small class="text-muted">{{ report.service.name }}</small>
+                        </div>
+                        <div class="d-flex gap-1 align-items-center">
+                            <span class="badge
+                                {% if report.status == 'FINAL' or report.status == 'PRINTED' %}bg-success
+                                {% elif report.status == 'PENDING_REVIEW' %}bg-warning text-dark
+                                {% elif report.status == 'DRAFT' %}bg-secondary
+                                {% else %}bg-danger{% endif %}">
+                                {{ report.get_status_display }}
+                            </span>
+                            <a href="{% url 'reports:detail' report.id %}" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

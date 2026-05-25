@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% block title %}Invoices{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-panel { margin-bottom: 20px; }
+    .filter-panel .card-header { cursor: pointer; user-select: none; }
+    .totals-bar {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #fff;
+        border-radius: 10px;
+        padding: 14px 20px;
+        margin-bottom: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        align-items: center;
+    }
+    .totals-bar .t-item { text-align: center; }
+    .totals-bar .t-value { font-size: 1.15rem; font-weight: 700; }
+    .totals-bar .t-label { font-size: .72rem; opacity: .8; }
+    .badge-paid { background: #198754; }
+    .badge-cancelled { background: #6c757d; }
+    .active-filters { font-size: .8rem; color: #1e3c72; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+        <i class="fas fa-file-invoice-dollar text-primary"></i>
+        {% if is_admin %}All Invoices{% else %}My Invoices{% endif %}
+    </h4>
+    <a href="{% url 'invoices:create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> New Invoice
+    </a>
+</div>
+
+<!-- ── Totals bar ─────────────────────────────────────────────────────────── -->
+{% if totals.count %}
+<div class="totals-bar">
+    <div class="t-item">
+        <div class="t-value">{{ totals.count }}</div>
+        <div class="t-label">INVOICES</div>
+    </div>
+    <div class="t-item">
+        <div class="t-value">₦{{ totals.grand_total|floatformat:0 }}</div>
+        <div class="t-label">TOTAL REVENUE</div>
+    </div>
+    <div class="t-item">
+        <div class="t-value">₦{{ totals.cash_total|default:0|floatformat:0 }}</div>
+        <div class="t-label">CASH</div>
+    </div>
+    <div class="t-item">
+        <div class="t-value">₦{{ totals.transfer_total|default:0|floatformat:0 }}</div>
+        <div class="t-label">TRANSFER</div>
+    </div>
+    <div class="t-item">
+        <div class="t-value">₦{{ totals.card_total|default:0|floatformat:0 }}</div>
+        <div class="t-label">CARD</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Filter panel ───────────────────────────────────────────────────────── -->
+<div class="card filter-panel">
+    <div class="card-header d-flex justify-content-between align-items-center"
+         data-bs-toggle="collapse" data-bs-target="#filterBody">
+        <span><i class="fas fa-filter me-2"></i>Filters</span>
+        <div class="d-flex align-items-center gap-2">
+            {% with active=filter.form.changed_data|length %}
+            {% if active %}
+            <span class="active-filters">{{ active }} active</span>
+            {% endif %}
+            {% endwith %}
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </div>
+    <div class="collapse show" id="filterBody">
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row g-2">
+                    <div class="col-md-3 col-6">
+                        <label class="form-label small fw-semibold mb-1">Patient Name</label>
+                        {{ filter.form.client_name }}
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold mb-1">Invoice #</label>
+                        {{ filter.form.invoice_number }}
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold mb-1">Phone</label>
+                        {{ filter.form.phone_number }}
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold mb-1">From Date</label>
+                        {{ filter.form.date_from }}
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold mb-1">To Date</label>
+                        {{ filter.form.date_to }}
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold mb-1">Payment Method</label>
+                        {{ filter.form.payment_method }}
+                    </div>
+                    {% if is_admin %}
+                    <div class="col-md-3 col-6">
+                        <label class="form-label small fw-semibold mb-1">Cashier</label>
+                        {{ filter.form.cashier }}
+                    </div>
+                    {% endif %}
+                    <div class="col-md-3 col-6">
+                        <label class="form-label small fw-semibold mb-1">Examination</label>
+                        {{ filter.form.service }}
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label small fw-semibold mb-1">Referral Source</label>
+                        {{ filter.form.referral }}
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold mb-1">Status</label>
+                        {{ filter.form.status }}
+                    </div>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'invoices:list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-times"></i> Clear All
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── Invoice table ─────────────────────────────────────────────────────── -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Patient</th>
+                    <th>Age / Sex</th>
+                    <th>Phone</th>
+                    <th>Examinations</th>
+                    <th>Referral</th>
+                    <th>Method</th>
+                    <th>Amount</th>
+                    {% if is_admin %}<th>Cashier</th>{% endif %}
+                    <th>Date &amp; Time</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in invoices %}
+                <tr>
+                    <td class="fw-semibold text-primary">
+                        <a href="{% url 'invoices:detail' invoice.id %}" class="text-decoration-none">
+                            {{ invoice.invoice_number }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="fw-semibold">{{ invoice.full_name }}</span>
+                    </td>
+                    <td class="text-muted small">{{ invoice.age }} / {{ invoice.get_sex_display }}</td>
+                    <td class="small">{{ invoice.phone_number }}</td>
+                    <td class="small">
+                        {% for item in invoice.items.all %}
+                            <span class="badge bg-light text-dark border">{{ item.service.name }}</span>
+                        {% empty %}—{% endfor %}
+                    </td>
+                    <td class="small text-muted">{{ invoice.referral.name|default:"—" }}</td>
+                    <td>
+                        <span class="badge
+                            {% if invoice.payment_method == 'CASH' %}bg-success
+                            {% elif invoice.payment_method == 'TRANSFER' %}bg-info
+                            {% else %}bg-warning text-dark{% endif %}">
+                            {{ invoice.get_payment_method_display }}
+                        </span>
+                    </td>
+                    <td class="fw-semibold">₦{{ invoice.total_amount|floatformat:0 }}</td>
+                    {% if is_admin %}
+                    <td class="small text-muted">{{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</td>
+                    {% endif %}
+                    <td class="small text-muted">{{ invoice.created_at|date:"d/m/y H:i" }}</td>
+                    <td>
+                        <span class="badge {% if invoice.status == 'PAID' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ invoice.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{% url 'invoices:detail' invoice.id %}"
+                           class="btn btn-sm btn-outline-primary" title="View">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'invoices:receipt' invoice.id %}"
+                           class="btn btn-sm btn-outline-success" title="Receipt">
+                            <i class="fas fa-receipt"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="12" class="text-center py-4 text-muted">
+                        <i class="fas fa-search fa-2x mb-2 d-block opacity-30"></i>
+                        No invoices found matching your filters.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if invoices.has_other_pages %}
+    <div class="card-body pt-2 pb-3">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                {% if invoices.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ invoices.previous_page_number }}">‹</a>
+                </li>
+                {% endif %}
+                {% for num in invoices.paginator.page_range %}
+                    {% if invoices.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > invoices.number|add:'-3' and num < invoices.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                {% if invoices.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{{ request.GET.urlencode }}&page={{ invoices.next_page_number }}">›</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

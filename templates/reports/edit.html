@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Edit {{ report.report_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .param-row { border-left:3px solid #1e3c72; padding-left:12px; }
+    .biodata-pill { background:#f0f4ff; border:1px solid #d0dcff; border-radius:8px; padding:10px 16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">
+        <i class="fas fa-edit text-warning me-2"></i>
+        Edit Report <span class="text-warning">{{ report.report_number }}</span>
+    </h4>
+    <a href="{% url 'reports:detail' report.id %}" class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-arrow-left"></i> Back
+    </a>
+</div>
+
+<!-- Patient biodata (read-only) -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="biodata-pill d-flex flex-wrap gap-4 small">
+            <div><span class="text-muted">Patient:</span> <strong>{{ report.client_name }}</strong></div>
+            <div><span class="text-muted">Age:</span> <strong>{{ report.client_age }}</strong></div>
+            <div><span class="text-muted">Sex:</span> <strong>{{ report.client_sex }}</strong></div>
+            <div><span class="text-muted">Phone:</span> <strong>{{ report.client_phone }}</strong></div>
+            <div><span class="text-muted">Service:</span> <strong>{{ report.service.name }}</strong></div>
+            {% if report.invoice %}
+            <div><span class="text-muted">Invoice:</span>
+                <a href="{% url 'invoices:detail' report.invoice.id %}"><strong>{{ report.invoice.invoice_number }}</strong></a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Results / Parameters -->
+            <div class="card mb-3">
+                <div class="card-header"><strong><i class="fas fa-flask me-2"></i>Results / Findings</strong></div>
+                <div class="card-body">
+                    {% for item in param_list %}
+                    <div class="mb-3 param-row">
+                        <label class="form-label fw-semibold">
+                            {{ item.name }}
+                            {% if item.required %}<span class="text-danger">*</span>{% endif %}
+                            {% if item.unit %}
+                            <small class="text-muted fw-normal">({{ item.unit }}{% if item.normal_range %} · Normal: {{ item.normal_range }}{% endif %})</small>
+                            {% elif item.normal_range %}
+                            <small class="text-muted fw-normal">Normal: {{ item.normal_range }}</small>
+                            {% endif %}
+                        </label>
+
+                        {% if item.type == 'textarea' %}
+                        <textarea name="param_{{ item.id }}" class="form-control" rows="3"
+                                  {% if item.required %}required{% endif %}>{{ item.value }}</textarea>
+
+                        {% elif item.type == 'select' %}
+                        <select name="param_{{ item.id }}" class="form-select" {% if item.required %}required{% endif %}>
+                            <option value="">— Select —</option>
+                            {% for opt in item.options %}
+                            <option value="{{ opt }}" {% if item.value == opt %}selected{% endif %}>{{ opt }}</option>
+                            {% endfor %}
+                        </select>
+
+                        {% elif item.type == 'checkbox' %}
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="param_{{ item.id }}" class="form-check-input"
+                                   value="Yes" id="p{{ item.id }}"
+                                   {% if item.value == 'Yes' %}checked{% endif %}>
+                            <label class="form-check-label" for="p{{ item.id }}">Positive / Yes</label>
+                        </div>
+
+                        {% elif item.type == 'number' %}
+                        <input type="number" name="param_{{ item.id }}" class="form-control"
+                               value="{{ item.value }}" step="0.01"
+                               {% if item.required %}required{% endif %}>
+
+                        {% else %}
+                        <input type="text" name="param_{{ item.id }}" class="form-control"
+                               value="{{ item.value }}"
+                               {% if item.required %}required{% endif %}>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">No predefined parameters for this service. Use the notes section below.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Notes & Signatory -->
+            <div class="card mb-3">
+                <div class="card-header"><strong><i class="fas fa-pen me-2"></i>Notes &amp; Signatory</strong></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Result Signatory</label>
+                        <input type="text" name="signatory" class="form-control"
+                               value="{{ report.signatory }}"
+                               placeholder="e.g. Dr. Aminu Musa, MBBS, FWACP">
+                        <div class="form-text">Name and qualifications of the person signing this report.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Lab / Technical Notes</label>
+                        <textarea name="lab_notes" class="form-control" rows="3"
+                                  placeholder="Methodology, observations…">{{ report.lab_notes }}</textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold">Clinical Notes</label>
+                        <textarea name="clinical_notes" class="form-control" rows="3"
+                                  placeholder="Clinical history, symptoms…">{{ report.clinical_notes }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <a href="{% url 'reports:detail' report.id %}" class="btn btn-outline-secondary">Cancel</a>
+                <a href="{% url 'reports:print' report.id %}" class="btn btn-outline-success ms-auto" target="_blank">
+                    <i class="fas fa-print"></i> Print
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

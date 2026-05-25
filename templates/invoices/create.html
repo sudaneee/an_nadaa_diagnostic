@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+{% block title %}New Invoice{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #e8ecf0;
+        margin-bottom: 18px;
+        overflow: hidden;
+    }
+    .form-section-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #fff;
+        padding: 12px 18px;
+        font-weight: 600;
+        font-size: .92rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .form-section-body { padding: 18px; }
+
+    /* Service table */
+    #servicesTable { width: 100%; border-collapse: collapse; }
+    #servicesTable th {
+        background: #f0f4f8;
+        padding: 8px 10px;
+        font-size: .82rem;
+        color: #555;
+        font-weight: 600;
+        text-align: left;
+    }
+    .service-row td { padding: 8px 6px; vertical-align: middle; }
+    .service-row:nth-child(even) td { background: #fafbfc; }
+
+    .btn-remove-row {
+        background: none;
+        border: none;
+        color: #dc3545;
+        font-size: 1.1rem;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    .btn-remove-row:hover { background: #fde8ea; }
+
+    /* Summary panel */
+    .summary-panel {
+        background: #fff;
+        border-radius: 12px;
+        border: 1px solid #e8ecf0;
+        position: sticky;
+        top: 20px;
+    }
+    .summary-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #fff;
+        padding: 14px 18px;
+        font-weight: 700;
+        border-radius: 12px 12px 0 0;
+        font-size: .95rem;
+    }
+    .summary-body { padding: 18px; }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        font-size: .9rem;
+    }
+    .summary-total {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #1e3c72;
+        border-top: 2px solid #e0e8f4;
+        padding-top: 12px;
+        margin-top: 8px;
+    }
+
+    /* Error highlight */
+    .is-invalid ~ .select2-container .select2-selection { border-color: #dc3545 !important; }
+
+    /* Select2 in service rows */
+    .select2-service .select2-selection { min-height: 36px !important; font-size: .9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0"><i class="fas fa-file-invoice-dollar text-primary"></i> New Invoice</h4>
+    <a href="{% url 'invoices:list' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Invoices
+    </a>
+</div>
+
+<form method="post" id="invoiceForm" novalidate>
+{% csrf_token %}
+<div class="row g-3">
+
+    <!-- ═══ LEFT COLUMN ════════════════════════════════════════════════════ -->
+    <div class="col-lg-8">
+
+        <!-- Patient Information -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <i class="fas fa-user"></i> Patient Information
+            </div>
+            <div class="form-section-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Surname <span class="text-danger">*</span></label>
+                        {{ form.surname }}
+                        {% if form.surname.errors %}
+                        <div class="invalid-feedback d-block">{{ form.surname.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.first_name.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Other Names</label>
+                        {{ form.other_names }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Age <span class="text-danger">*</span></label>
+                        {{ form.age }}
+                        {% if form.age.errors %}
+                        <div class="invalid-feedback d-block">{{ form.age.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Sex <span class="text-danger">*</span></label>
+                        {{ form.sex }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                        {{ form.phone_number }}
+                        {% if form.phone_number.errors %}
+                        <div class="invalid-feedback d-block">{{ form.phone_number.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Referred By</label>
+                        {{ form.referral }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Examinations -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <i class="fas fa-flask"></i> Examinations
+                <button type="button" class="btn btn-sm btn-light ms-auto" onclick="addServiceRow()">
+                    <i class="fas fa-plus"></i> Add Examination
+                </button>
+            </div>
+            <div class="form-section-body p-0">
+                <table id="servicesTable">
+                    <thead>
+                        <tr>
+                            <th style="width:50%">Examination</th>
+                            <th style="width:12%">Qty</th>
+                            <th style="width:18%">Unit Price</th>
+                            <th style="width:15%">Total</th>
+                            <th style="width:5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="servicesBody"></tbody>
+                </table>
+                <div class="p-3 text-center text-muted small" id="noServicesMsg">
+                    <i class="fas fa-info-circle"></i> Click "Add Examination" to begin.
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-section">
+            <div class="form-section-header"><i class="fas fa-sticky-note"></i> Notes (optional)</div>
+            <div class="form-section-body">{{ form.notes }}</div>
+        </div>
+
+    </div><!-- /left col -->
+
+    <!-- ═══ RIGHT COLUMN — Summary + Payment ══════════════════════════════ -->
+    <div class="col-lg-4">
+        <div class="summary-panel">
+            <div class="summary-header"><i class="fas fa-receipt"></i> Invoice Summary</div>
+            <div class="summary-body">
+
+                <div class="summary-row">
+                    <span class="text-muted">Subtotal</span>
+                    <strong id="subtotalDisplay">₦0.00</strong>
+                </div>
+
+                <div class="summary-row align-items-start">
+                    <label class="form-label mb-0 text-muted" style="white-space:nowrap;">Discount (₦)</label>
+                    {{ form.discount }}
+                </div>
+                {% if form.discount.errors %}
+                <div class="invalid-feedback d-block">{{ form.discount.errors.0 }}</div>{% endif %}
+
+                <div class="summary-row summary-total mt-3">
+                    <span>TOTAL</span>
+                    <span id="totalDisplay">₦0.00</span>
+                </div>
+
+                <hr class="my-3">
+                <h6 class="fw-bold mb-3"><i class="fas fa-money-bill-wave text-success"></i> Payment</h6>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Payment Method <span class="text-danger">*</span></label>
+                    {{ form.payment_method }}
+                    {% if form.payment_method.errors %}
+                    <div class="invalid-feedback d-block">{{ form.payment_method.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="mb-3" id="referenceGroup" style="display:none;">
+                    <label class="form-label fw-semibold">Reference Number <span class="text-danger">*</span></label>
+                    {{ form.reference_number }}
+                    {% if form.reference_number.errors %}
+                    <div class="invalid-feedback d-block">{{ form.reference_number.errors.0 }}</div>{% endif %}
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger py-2">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-success btn-lg fw-bold" id="submitBtn">
+                        <i class="fas fa-check-circle"></i> Save & Print Receipt
+                    </button>
+                    <a href="{% url 'invoices:list' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </a>
+                </div>
+
+            </div><!-- /summary-body -->
+        </div>
+    </div><!-- /right col -->
+
+</div><!-- /row -->
+</form>
+
+<!-- Hidden service options data (for JS) -->
+<script id="serviceData" type="application/json">
+[
+    {% for category in categories %}
+    {% for service in category.services.all %}
+    {% if service.is_active %}
+    {
+        "id": {{ service.id }},
+        "name": "{{ service.name|escapejs }}",
+        "category": "{{ category.name|escapejs }}",
+        "price": {{ service.price }}
+    }{% if not forloop.last %},{% endif %}
+    {% endif %}
+    {% endfor %}
+    {% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Service data from Django ──────────────────────────────────────────────────
+const ALL_SERVICES = JSON.parse(document.getElementById('serviceData').textContent);
+
+// Group by category for Select2 optgroup rendering
+const BY_CATEGORY = {};
+ALL_SERVICES.forEach(s => {
+    if (!BY_CATEGORY[s.category]) BY_CATEGORY[s.category] = [];
+    BY_CATEGORY[s.category].push(s);
+});
+
+let rowCount = 0;
+
+function buildServiceOptions() {
+    let html = '<option value="">— Search examination —</option>';
+    Object.keys(BY_CATEGORY).sort().forEach(cat => {
+        html += `<optgroup label="${escHtml(cat)}">`;
+        BY_CATEGORY[cat].forEach(s => {
+            html += `<option value="${s.id}" data-price="${s.price}">`
+                 + `${escHtml(s.name)} — ₦${Number(s.price).toLocaleString()}</option>`;
+        });
+        html += '</optgroup>';
+    });
+    return html;
+}
+
+function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function addServiceRow() {
+    rowCount++;
+    const id = 'row_' + rowCount;
+    const tbody = document.getElementById('servicesBody');
+    document.getElementById('noServicesMsg').style.display = 'none';
+
+    const tr = document.createElement('tr');
+    tr.className = 'service-row';
+    tr.id = id;
+    tr.innerHTML = `
+        <td>
+            <select name="service[]" class="service-select form-select form-select-sm"
+                    id="svc_${rowCount}" onchange="onServiceChange('${id}')">
+                ${buildServiceOptions()}
+            </select>
+        </td>
+        <td>
+            <input type="number" name="quantity[]" class="form-control form-control-sm qty-input"
+                   value="1" min="1" style="width:65px;" oninput="recalcRow('${id}')">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm unit-price" readonly
+                   value="₦0.00" style="background:#f8f9fa;">
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm row-total" readonly
+                   value="₦0.00" style="background:#f8f9fa; font-weight:600;">
+        </td>
+        <td>
+            <button type="button" class="btn-remove-row" onclick="removeRow('${id}')"
+                    title="Remove">✕</button>
+        </td>`;
+    tbody.appendChild(tr);
+
+    // Initialise Select2 on the new select
+    $(`#svc_${rowCount}`).select2({
+        theme: 'bootstrap-5',
+        placeholder: '— Search examination —',
+        allowClear: false,
+        width: '100%',
+    }).on('change', function() {
+        onServiceChange(id);
+    });
+}
+
+function onServiceChange(rowId) {
+    const row = document.getElementById(rowId);
+    const sel = row.querySelector('.service-select');
+    const price = parseFloat(sel.options[sel.selectedIndex]?.dataset?.price || 0);
+    row.querySelector('.unit-price').value = '₦' + price.toLocaleString('en', {minimumFractionDigits:2});
+    recalcRow(rowId);
+}
+
+function recalcRow(rowId) {
+    const row = document.getElementById(rowId);
+    const sel = row.querySelector('.service-select');
+    const price = parseFloat(sel.options[sel.selectedIndex]?.dataset?.price || 0);
+    const qty = parseInt(row.querySelector('.qty-input').value) || 0;
+    row.querySelector('.row-total').value = '₦' + (price * qty).toLocaleString('en', {minimumFractionDigits:2});
+    updateSummary();
+}
+
+function removeRow(rowId) {
+    document.getElementById(rowId).remove();
+    const tbody = document.getElementById('servicesBody');
+    if (!tbody.children.length) {
+        document.getElementById('noServicesMsg').style.display = '';
+    }
+    updateSummary();
+}
+
+function updateSummary() {
+    let subtotal = 0;
+    document.querySelectorAll('.row-total').forEach(el => {
+        subtotal += parseFloat(el.value.replace(/[₦,]/g, '')) || 0;
+    });
+    const discount = parseFloat(document.getElementById('id_discount')?.value) || 0;
+    const total = Math.max(subtotal - discount, 0);
+
+    document.getElementById('subtotalDisplay').textContent = '₦' + subtotal.toLocaleString('en', {minimumFractionDigits:2});
+    document.getElementById('totalDisplay').textContent = '₦' + total.toLocaleString('en', {minimumFractionDigits:2});
+}
+
+// Referral select2
+$(document).ready(function() {
+    // Payment method → show/hide reference field
+    const methodSelect = document.getElementById('id_payment_method');
+    const refGroup = document.getElementById('referenceGroup');
+
+    function toggleRef() {
+        const v = methodSelect.value;
+        refGroup.style.display = (v === 'TRANSFER' || v === 'CARD') ? '' : 'none';
+    }
+    methodSelect.addEventListener('change', toggleRef);
+    toggleRef();
+
+    // Discount recalculate
+    const discountEl = document.getElementById('id_discount');
+    if (discountEl) discountEl.addEventListener('input', updateSummary);
+
+    // Select2 for referral
+    $('.referral-select').select2({
+        theme: 'bootstrap-5',
+        placeholder: '— Walk-in / None —',
+        allowClear: true,
+        width: '100%',
+    });
+
+    // Start with one row
+    addServiceRow();
+
+    // Prevent double-submit
+    document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+        const rows = document.querySelectorAll('.service-row');
+        const hasService = Array.from(rows).some(r => r.querySelector('.service-select').value);
+        if (!hasService) {
+            e.preventDefault();
+            alert('Please add at least one examination before saving.');
+            return;
+        }
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+    });
+});
+</script>
+{% endblock %}

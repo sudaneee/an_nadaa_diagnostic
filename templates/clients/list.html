@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Clients{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Clients</h2>
+        <a href="{% url 'clients:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Client
+        </a>
+    </div>
+    
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Search by name or phone..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </div>
+    </form>
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <td>{{ client.full_name }}</td>
+                    <td>{{ client.phone_number }}</td>
+                    <td>{{ client.email|default:"-" }}</td>
+                    <td>{{ client.created_at|date:"d/m/Y" }}</td>
+                    <td>
+                        <a href="{% url 'clients:history' client.id %}" class="btn btn-sm btn-info" title="History">
+                            <i class="fas fa-history"></i>
+                        </a>
+                        <a href="{% url 'clients:edit' client.id %}" class="btn btn-sm btn-warning" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'invoices:create' %}?client={{ client.id }}" class="btn btn-sm btn-success" title="New Invoice">
+                            <i class="fas fa-file-invoice"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No clients found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if clients.has_other_pages %}
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if clients.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ clients.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for num in clients.paginator.page_range %}
+            <li class="page-item {% if clients.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}">{{ num }}</a>
+            </li>
+            {% endfor %}
+            
+            {% if clients.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ clients.next_page_number }}{% if query %}&q={{ query }}{% endif %}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

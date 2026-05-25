@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Preview JSON formatting
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.querySelector('#id_report_template');
+        if (textarea && textarea.value) {
+            try {
+                const obj = JSON.parse(textarea.value);
+                textarea.value = JSON.stringify(obj, null, 2);
+            } catch(e) {
+                // Not valid JSON, leave as is
+            }
+        }
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <a href="{% url 'services:list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h4>Report Template Help</h4>
+            </div>
+            <div class="card-body">
+                <p>The report template defines what parameters will appear in the medical report.</p>
+                <h6>Example Template:</h6>
+                <pre class="bg-light p-3">
+{
+    "parameters": [
+        {
+            "name": "Malaria Parasite",
+            "type": "select",
+            "options": ["Positive", "Negative"],
+            "required": true
+        },
+        {
+            "name": "Comments",
+            "type": "textarea",
+            "required": false
+        }
+    ]
+}</pre>
+                <p><strong>Parameter Types:</strong></p>
+                <ul>
+                    <li><strong>text</strong> - Short text input</li>
+                    <li><strong>textarea</strong> - Long text area</li>
+                    <li><strong>number</strong> - Numeric input (use with 'unit' and 'normal_range')</li>
+                    <li><strong>select</strong> - Dropdown (requires 'options' array)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
