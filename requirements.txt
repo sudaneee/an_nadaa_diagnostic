@@ -50,7 +50,7 @@ pyhanko-certvalidator==0.30.2
 pypdf==6.9.2
 pyphen==0.17.2
 PySocks==1.7.1
-python-bidi==0.6.7
+python-bidi==0.6.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
 python-jose==3.5.0
