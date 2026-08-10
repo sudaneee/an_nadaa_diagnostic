@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}Dashboard{% endblock %}
 
 {% block extra_css %}
@@ -38,7 +39,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-primary"><i class="fas fa-file-invoice-dollar"></i></div>
-                <div class="stat-value">{{ today_count }}</div>
+                <div class="stat-value">{{ today_count|intcomma }}</div>
                 <div class="stat-label">Today's Invoices</div>
             </div>
         </div>
@@ -47,7 +48,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-success"><i class="fas fa-money-bill-wave"></i></div>
-                <div class="stat-value text-success">&#8358;{{ today_revenue|floatformat:0 }}</div>
+                <div class="stat-value text-success">&#8358;{{ today_revenue|floatformat:0|intcomma }}</div>
                 <div class="stat-label">Today's Revenue</div>
             </div>
         </div>
@@ -56,7 +57,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-info"><i class="fas fa-file-medical"></i></div>
-                <div class="stat-value text-info">{{ reports_today }}</div>
+                <div class="stat-value text-info">{{ reports_today|intcomma }}</div>
                 <div class="stat-label">Reports Today</div>
             </div>
         </div>
@@ -75,7 +76,7 @@
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-1">
                         <span><i class="fas fa-money-bill text-success me-1"></i>Cash</span>
-                        <strong class="text-success">&#8358;{{ today_cash|default:0|floatformat:0 }}</strong>
+                        <strong class="text-success">&#8358;{{ today_cash|default:0|floatformat:0|intcomma }}</strong>
                     </div>
                     <div class="progress method-bar">
                         <div class="progress-bar bg-success" style="width:{% if today_revenue %}{% widthratio today_cash today_revenue 100 %}{% else %}0{% endif %}%"></div>
@@ -84,7 +85,7 @@
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-1">
                         <span><i class="fas fa-university text-info me-1"></i>Transfer</span>
-                        <strong class="text-info">&#8358;{{ today_transfer|default:0|floatformat:0 }}</strong>
+                        <strong class="text-info">&#8358;{{ today_transfer|default:0|floatformat:0|intcomma }}</strong>
                     </div>
                     <div class="progress method-bar">
                         <div class="progress-bar bg-info" style="width:{% if today_revenue %}{% widthratio today_transfer today_revenue 100 %}{% else %}0{% endif %}%"></div>
@@ -93,7 +94,7 @@
                 <div class="mb-2">
                     <div class="d-flex justify-content-between mb-1">
                         <span><i class="fas fa-credit-card text-warning me-1"></i>Card</span>
-                        <strong class="text-warning">&#8358;{{ today_card|default:0|floatformat:0 }}</strong>
+                        <strong class="text-warning">&#8358;{{ today_card|default:0|floatformat:0|intcomma }}</strong>
                     </div>
                     <div class="progress method-bar">
                         <div class="progress-bar bg-warning" style="width:{% if today_revenue %}{% widthratio today_card today_revenue 100 %}{% else %}0{% endif %}%"></div>
@@ -133,8 +134,8 @@
                         <tr>
                             <td><span class="top-service-num">{{ forloop.counter }}</span></td>
                             <td>{{ s.service__name }}</td>
-                            <td class="text-center fw-semibold">{{ s.count }}</td>
-                            <td class="text-end text-success">&#8358;{{ s.revenue|floatformat:0 }}</td>
+                            <td class="text-center fw-semibold">{{ s.count|intcomma }}</td>
+                            <td class="text-end text-success">&#8358;{{ s.revenue|floatformat:0|intcomma }}</td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="4" class="text-center text-muted py-3">No data yet today.</td></tr>
@@ -175,11 +176,11 @@
                                 {% if not cs.created_by__first_name %}{{ cs.created_by__username }}{% endif %}
                             </strong>
                         </td>
-                        <td class="text-center">{{ cs.invoice_count }}</td>
-                        <td class="text-end fw-semibold text-primary">&#8358;{{ cs.total|floatformat:0 }}</td>
-                        <td class="text-end text-success">&#8358;{{ cs.cash|default:0|floatformat:0 }}</td>
-                        <td class="text-end text-info">&#8358;{{ cs.transfer|default:0|floatformat:0 }}</td>
-                        <td class="text-end text-warning">&#8358;{{ cs.card|default:0|floatformat:0 }}</td>
+                        <td class="text-center">{{ cs.invoice_count|intcomma }}</td>
+                        <td class="text-end fw-semibold text-primary">&#8358;{{ cs.total|floatformat:0|intcomma }}</td>
+                        <td class="text-end text-success">&#8358;{{ cs.cash|default:0|floatformat:0|intcomma }}</td>
+                        <td class="text-end text-info">&#8358;{{ cs.transfer|default:0|floatformat:0|intcomma }}</td>
+                        <td class="text-end text-warning">&#8358;{{ cs.card|default:0|floatformat:0|intcomma }}</td>
                     </tr>
                     {% empty %}
                     <tr><td colspan="6" class="text-center text-muted py-3">No invoices processed today.</td></tr>
@@ -226,7 +227,7 @@
                                 {{ inv.get_payment_method_display }}
                             </span>
                         </td>
-                        <td class="text-end fw-semibold">&#8358;{{ inv.total_amount|floatformat:0 }}</td>
+                        <td class="text-end fw-semibold">&#8358;{{ inv.total_amount|floatformat:0|intcomma }}</td>
                         <td class="text-muted small">{{ inv.created_by.get_full_name|default:inv.created_by.username }}</td>
                         <td class="text-muted small">{{ inv.created_at|date:"H:i" }}</td>
                         <td>
@@ -253,7 +254,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-primary"><i class="fas fa-file-invoice-dollar"></i></div>
-                <div class="stat-value">{{ today_count }}</div>
+                <div class="stat-value">{{ today_count|intcomma }}</div>
                 <div class="stat-label">My Invoices Today</div>
             </div>
         </div>
@@ -262,7 +263,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-success"><i class="fas fa-money-bill-wave"></i></div>
-                <div class="stat-value text-success">&#8358;{{ today_revenue|floatformat:0 }}</div>
+                <div class="stat-value text-success">&#8358;{{ today_revenue|floatformat:0|intcomma }}</div>
                 <div class="stat-label">My Collections Today</div>
             </div>
         </div>
@@ -271,7 +272,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-success"><i class="fas fa-money-bill"></i></div>
-                <div class="stat-value text-success">&#8358;{{ today_cash|default:0|floatformat:0 }}</div>
+                <div class="stat-value text-success">&#8358;{{ today_cash|default:0|floatformat:0|intcomma }}</div>
                 <div class="stat-label">Cash</div>
             </div>
         </div>
@@ -280,7 +281,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-info"><i class="fas fa-university"></i></div>
-                <div class="stat-value text-info">&#8358;{{ today_transfer|default:0|floatformat:0 }}</div>
+                <div class="stat-value text-info">&#8358;{{ today_transfer|default:0|floatformat:0|intcomma }}</div>
                 <div class="stat-label">Transfer</div>
             </div>
         </div>
@@ -289,7 +290,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-warning"><i class="fas fa-credit-card"></i></div>
-                <div class="stat-value text-warning">&#8358;{{ today_card|default:0|floatformat:0 }}</div>
+                <div class="stat-value text-warning">&#8358;{{ today_card|default:0|floatformat:0|intcomma }}</div>
                 <div class="stat-label">Card</div>
             </div>
         </div>
@@ -330,7 +331,7 @@
                                 {{ inv.get_payment_method_display }}
                             </span>
                         </td>
-                        <td class="text-end fw-semibold">&#8358;{{ inv.total_amount|floatformat:0 }}</td>
+                        <td class="text-end fw-semibold">&#8358;{{ inv.total_amount|floatformat:0|intcomma }}</td>
                         <td class="text-muted small">{{ inv.created_at|date:"d/m H:i" }}</td>
                         <td>
                             <a href="{% url 'invoices:detail' inv.id %}" class="btn btn-sm btn-outline-primary">
@@ -359,7 +360,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-primary"><i class="fas fa-file-medical"></i></div>
-                <div class="stat-value text-primary">{{ total_reports }}</div>
+                <div class="stat-value text-primary">{{ total_reports|intcomma }}</div>
                 <div class="stat-label">Total Reports</div>
             </div>
         </div>
@@ -368,7 +369,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-info"><i class="fas fa-calendar-day"></i></div>
-                <div class="stat-value text-info">{{ reports_today }}</div>
+                <div class="stat-value text-info">{{ reports_today|intcomma }}</div>
                 <div class="stat-label">Reports Today</div>
             </div>
         </div>
@@ -426,7 +427,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-primary"><i class="fas fa-calendar-day"></i></div>
-                <div class="stat-value text-primary">{{ my_reports_today }}</div>
+                <div class="stat-value text-primary">{{ my_reports_today|intcomma }}</div>
                 <div class="stat-label">My Reports Today</div>
             </div>
         </div>
@@ -435,7 +436,7 @@
         <div class="stat-card card text-center">
             <div class="card-body py-3">
                 <div class="stat-icon text-success"><i class="fas fa-file-medical"></i></div>
-                <div class="stat-value text-success">{{ my_reports_total }}</div>
+                <div class="stat-value text-success">{{ my_reports_total|intcomma }}</div>
                 <div class="stat-label">My Total Reports</div>
             </div>
         </div>

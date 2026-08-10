@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}Invoices{% endblock %}
 
 {% block extra_css %}
@@ -41,23 +42,23 @@
 {% if totals.count %}
 <div class="totals-bar">
     <div class="t-item">
-        <div class="t-value">{{ totals.count }}</div>
+        <div class="t-value">{{ totals.count|intcomma }}</div>
         <div class="t-label">INVOICES</div>
     </div>
     <div class="t-item">
-        <div class="t-value">₦{{ totals.grand_total|floatformat:0 }}</div>
+        <div class="t-value">₦{{ totals.grand_total|floatformat:0|intcomma }}</div>
         <div class="t-label">TOTAL REVENUE</div>
     </div>
     <div class="t-item">
-        <div class="t-value">₦{{ totals.cash_total|default:0|floatformat:0 }}</div>
+        <div class="t-value">₦{{ totals.cash_total|default:0|floatformat:0|intcomma }}</div>
         <div class="t-label">CASH</div>
     </div>
     <div class="t-item">
-        <div class="t-value">₦{{ totals.transfer_total|default:0|floatformat:0 }}</div>
+        <div class="t-value">₦{{ totals.transfer_total|default:0|floatformat:0|intcomma }}</div>
         <div class="t-label">TRANSFER</div>
     </div>
     <div class="t-item">
-        <div class="t-value">₦{{ totals.card_total|default:0|floatformat:0 }}</div>
+        <div class="t-value">₦{{ totals.card_total|default:0|floatformat:0|intcomma }}</div>
         <div class="t-label">CARD</div>
     </div>
 </div>
@@ -184,7 +185,7 @@
                             {{ invoice.get_payment_method_display }}
                         </span>
                     </td>
-                    <td class="fw-semibold">₦{{ invoice.total_amount|floatformat:0 }}</td>
+                    <td class="fw-semibold">₦{{ invoice.total_amount|floatformat:0|intcomma }}</td>
                     {% if is_admin %}
                     <td class="small text-muted">{{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</td>
                     {% endif %}

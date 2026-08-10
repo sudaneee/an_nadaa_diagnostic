@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
 {% block title %}{{ client.full_name }} - History{% endblock %}
 
@@ -33,7 +34,7 @@
                 <tr>
                     <td>{{ invoice.invoice_number }}</td>
                     <td>{{ invoice.created_at|date:"d/m/Y H:i" }}</td>
-                    <td>₦{{ invoice.total_amount|floatformat:2 }}</td>
+                    <td>₦{{ invoice.total_amount|floatformat:2|intcomma }}</td>
                     <td>
                         <span class="badge bg-{% if invoice.status == 'PAID' %}success{% elif invoice.status == 'UNPAID' %}danger{% else %}warning{% endif %}">
                             {{ invoice.get_status_display }}

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 
 {% block title %}Diagnostic Services{% endblock %}
 
@@ -51,7 +52,7 @@
                 <tr>
                     <td>{{ service.name }}</td>
                     <td>{{ service.category.name|default:"-" }}</td>
-                    <td>₦{{ service.price|floatformat:2 }}</td>
+                    <td>₦{{ service.price|floatformat:2|intcomma }}</td>
                     <td>
                         {% if service.requires_report %}
                         <span class="badge bg-info">Yes</span>
