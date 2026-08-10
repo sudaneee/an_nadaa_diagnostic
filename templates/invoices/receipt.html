@@ -3,11 +3,53 @@
 
 {% block extra_css %}
 <style>
+    /* Thermal printer (80mm) receipt output */
     @media print {
-        .no-print { display: none !important; }
-        body { background: #fff !important; }
-        .app-container { box-shadow: none !important; margin: 0 !important; border-radius: 0 !important; }
-        .receipt-card { border: none !important; }
+        @page { size: 80mm auto; margin: 0; }
+
+        .navbar-custom, .no-print, .alert { display: none !important; }
+
+        html, body {
+            width: 80mm;
+            background: #fff !important;
+            font-size: 11px;
+        }
+        .app-container {
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            background: #fff !important;
+        }
+        .main-content { padding: 0 !important; }
+
+        .receipt-card {
+            max-width: 100% !important;
+            width: 100%;
+            margin: 0 !important;
+            border: none !important;
+            border-radius: 0 !important;
+            font-size: 11px;
+        }
+        .receipt-header {
+            background: #fff !important;
+            color: #000 !important;
+            padding: 6px 4px !important;
+            border-bottom: 1px dashed #000;
+        }
+        .receipt-body { padding: 6px 4px !important; }
+        .receipt-row { border-bottom-color: #000 !important; }
+        .receipt-divider { border-top-color: #000 !important; }
+        .receipt-total { color: #000 !important; }
+        .text-muted { color: #333 !important; }
+        .receipt-footer {
+            background: #fff !important;
+            color: #000 !important;
+            border-top: 1px dashed #000;
+            padding: 6px 4px !important;
+        }
+        .fas, .fa { display: none !important; } /* icon fonts don't render on thermal drivers */
     }
 
     .receipt-card {
